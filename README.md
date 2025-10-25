@@ -35,16 +35,22 @@ The project is currently in the planning stage using the [SpecKit framework](htt
 
 ```bash
 # Process multiple drone videos into 3-minute highlight
-python src/main.py \
+python -m autovideo \
   --input drone_flight1.mp4 drone_flight2.mp4 drone_flight3.mp4 \
   --duration 180 \
-  --output ./highlights
+  --output-dir ./output
+
+# For 4K videos, add --resize-to-hd for faster processing
+python -m autovideo \
+  --input 4k_drone_footage.mp4 \
+  --duration 300 \
+  --resize-to-hd
 ```
 
 **Output:**
-- `highlights/combined_highlight.mp4` - Final video with GPS overlays
-- `highlights/checkpoints/` - JSON files for manual editing
-- `highlights/logs/` - Detailed processing logs
+- `output/highlight.mp4` - Final highlight reel
+- `output/checkpoints/` - JSON checkpoints for each phase
+- `output/logs/` - Detailed processing logs
 
 ## Technology Stack
 

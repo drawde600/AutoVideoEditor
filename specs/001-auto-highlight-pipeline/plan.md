@@ -7,21 +7,21 @@
 
 ## Summary
 
-Build a Python-based automatic video editor that processes one or more long MP4 videos into curated highlight reels through a 5-phase pipeline (Segmentation → Ranking → Assembly → Composition → Audio). Each phase produces JSON checkpoints enabling manual overrides and non-destructive editing. The system uses OpenCV for visual analysis (motion, scene changes, composition) and FFmpeg for video/audio manipulation.
+Build a Python-based automatic video editor that processes one or more long MP4 videos into curated highlight reels through a 5-phase pipeline (Segmentation → Ranking → Assembly → Composition → Audio). Each phase produces JSON checkpoints enabling manual overrides and non-destructive editing. The system uses OpenCV for visual analysis (motion, scene changes, composition with weights: 60% scene changes, 25% motion, 15% composition) and FFmpeg for video/audio manipulation.
 
-**Core Value**: Automates the extraction of interesting segments from multiple drone videos (totaling 2 hours) into a single 3-minute highlight reel, with full manual override capability via JSON checkpoints.
+**Core Value**: Automates the extraction of interesting segments from multiple drone videos (totaling 2 hours) into a single 3-minute highlight reel, with quality threshold of 7/10 and full manual override capability via JSON checkpoints.
 
 ## Technical Context
 
 **Language/Version**: Python 3.11+
-**Primary Dependencies**: OpenCV (cv2), FFmpeg (via subprocess/ffmpeg-python wrapper), Python standard library (json, pathlib, argparse, logging)
+**Primary Dependencies**: OpenCV (cv2), FFmpeg (via subprocess), Pydantic (validation), Python standard library (json, pathlib, argparse, logging)
 **Storage**: File-based (MP4 input/output, JSON checkpoints, log files)
 **Testing**: pytest for unit/integration tests, test fixtures for sample videos
 **Target Platform**: Desktop/Server (Windows, Linux, macOS) - command-line interface
 **Project Type**: Single command-line application with library modules
 **Performance Goals**: Process 2-hour 1080p video → 3-minute highlight in <15 minutes (SC-001); individual phases <2 minutes (SC-006)
-**Constraints**: Videos up to 4 hours, 1080p resolution (SC-004); preserve source quality (SC-005); non-destructive editing (FR-026)
-**Scale/Scope**: Single-user CLI tool; processes one video at a time; supports 5 distinct pipeline phases
+**Constraints**: Videos up to 4 hours, 1080p resolution (SC-004); preserve source quality (SC-005); non-destructive editing (FR-031)
+**Scale/Scope**: Single-user CLI tool; processes one or more videos together; supports 5 distinct pipeline phases
 
 ## Constitution Check
 
@@ -34,7 +34,16 @@ Build a Python-based automatic video editor that processes one or more long MP4 
 - Non-destructive operations (preserve source files)
 - JSON-based configuration and state persistence
 
-**Post-Design Re-check**: Will validate after Phase 1 design artifacts are complete.
+**Post-Design Re-check**: ✅ **PASSED**
+
+All artifacts (research.md, data-model.md, contracts/, quickstart.md) align with best practices:
+- Clean separation of concerns (phases, analysis, video utilities)
+- Pydantic models for type safety and validation
+- JSON Schema contracts for checkpoint validation
+- Comprehensive error handling with checkpoints and logging
+- Non-destructive editing with preserved source files
+
+No constitution violations. Implementation ready to proceed.
 
 ## Project Structure
 
@@ -47,13 +56,14 @@ specs/001-auto-highlight-pipeline/
 ├── research.md          # Phase 0 output - technology decisions
 ├── data-model.md        # Phase 1 output - entity definitions
 ├── quickstart.md        # Phase 1 output - usage examples
-├── contracts/           # Phase 1 output - JSON schemas
-│   ├── checkpoint-phase1.json
-│   ├── checkpoint-phase2.json
-│   ├── checkpoint-phase3.json
-│   ├── checkpoint-phase4.json
-│   └── checkpoint-phase5.json
-└── tasks.md             # Phase 2 output (/speckit.tasks command)
+├── checklists/          # Quality validation checklists
+│   └── pre-implementation.md
+└── contracts/           # Phase 1 output - JSON schemas
+    ├── checkpoint-phase1.json
+    ├── checkpoint-phase2.json
+    ├── checkpoint-phase3.json
+    ├── checkpoint-phase4.json
+    └── checkpoint-phase5.json
 ```
 
 ### Source Code (repository root)
@@ -127,43 +137,56 @@ output/                      # Created at runtime
 
 ## Phase Breakdown
 
-### Phase 0: Research & Technical Decisions
+### Phase 0: Research & Technical Decisions ✅ COMPLETE
 
 **Objective**: Resolve all technology choices and establish implementation patterns.
 
-**Research Areas**:
-1. OpenCV integration patterns for frame analysis
-2. FFmpeg subprocess management best practices
-3. Motion detection algorithms (frame differencing vs optical flow)
-4. Scene change detection techniques (histogram comparison, edge detection)
-5. Visual composition scoring heuristics
-6. JSON schema validation approaches
-7. Progress reporting patterns for long-running processes
-8. Python logging configuration for multi-level output
+**Research Areas Completed**:
+1. ✅ OpenCV integration patterns for frame analysis → VideoCapture with 1fps sampling
+2. ✅ FFmpeg subprocess management best practices → subprocess.run() with command templates
+3. ✅ Motion detection algorithms → Frame differencing with binary thresholding
+4. ✅ Scene change detection techniques → Histogram comparison (Chi-Square distance)
+5. ✅ Visual composition scoring heuristics → Edge density + color diversity + brightness
+6. ✅ Quality score formula → **60% scene changes + 25% motion + 15% composition**
+7. ✅ JSON schema validation approaches → Pydantic models
+8. ✅ Progress reporting patterns → Callback-based with percentage completion
+9. ✅ Python logging configuration → YAML configuration with multiple handlers
+10. ✅ Segment classification → Rule-based classification (not ML)
 
 **Output**: `research.md` with decision rationale for each area
 
-### Phase 1: Design & Contracts
+**Key Decisions**:
+- **Quality Threshold**: 7/10 minimum for "interesting" segments
+- **Multi-Video Ordering**: Chronological by original timestamp across all videos
+- **Failure Handling**: Halt pipeline, save checkpoint, log errors, preserve partial work
+- **Invalid File Handling**: Validate headers, skip with warning, process valid files
+
+### Phase 1: Design & Contracts ✅ COMPLETE
 
 **Objective**: Define data models, JSON checkpoint schemas, and integration patterns.
 
-**Deliverables**:
+**Deliverables Completed**:
 
-1. **data-model.md**: Entity definitions with fields, validation rules, state transitions
-   - VideoSource, Segment, Checkpoint (5 variants), PipelineConfig, ProgressReport, LogFile
+1. ✅ **data-model.md**: Entity definitions with fields, validation rules, state transitions
+   - VideoSource (with timestamp for chronological ordering)
+   - Segment (with GPS data support)
+   - Checkpoint (5 variants for each phase)
+   - PipelineConfig (min quality threshold 7/10)
+   - HighlightReel, ProgressReport, LogFile
 
-2. **contracts/**: JSON schemas for each checkpoint phase
+2. ✅ **contracts/**: JSON schemas for each checkpoint phase
    - Phase 1: Segmentation checkpoint (segments with timestamps, durations)
-   - Phase 2: Ranking checkpoint (segments with scores, classifications)
-   - Phase 3: Assembly checkpoint (selected segments, ordering)
-   - Phase 4: Composition checkpoint (effects, overlays, subtitles)
+   - Phase 2: Ranking checkpoint (segments with scores 60%/25%/15%, classifications, threshold 7/10)
+   - Phase 3: Assembly checkpoint (selected segments, chronological ordering)
+   - Phase 4: Composition checkpoint (effects, overlays, subtitles, GPS overlay config)
    - Phase 5: Audio checkpoint (mixing settings, normalization levels)
 
-3. **quickstart.md**: Usage examples
-   - Basic: Full pipeline execution
+3. ✅ **quickstart.md**: Usage examples
+   - Basic: Full pipeline execution with multiple videos
    - Manual override: Edit checkpoint and resume
    - Individual phase: Run single phase with existing checkpoint
    - Logging levels: Adjust verbosity
+   - Advanced: Custom quality threshold, frame sampling, auto-duration
 
 **Output**: `data-model.md`, `contracts/*.json`, `quickstart.md`
 
@@ -175,38 +198,60 @@ output/                      # Created at runtime
 - Each phase implements `PhaseInterface` with `execute(config, checkpoint_in) → checkpoint_out`
 - Pipeline runner executes phases sequentially or individually based on CLI args
 - Checkpoints passed as input/output between phases
+- Multi-video support: all videos processed together as unified content pool
 
 ### Checkpoint Management
 
 **Pattern**: JSON-based state persistence
 - Each phase reads optional input checkpoint (skip recalculation)
 - Each phase writes output checkpoint (enable manual override)
-- Validation layer ensures checkpoint integrity before use (FR-027)
-- Schema validation using JSON Schema or Pydantic models
+- Validation layer ensures checkpoint integrity before use (FR-033)
+- Schema validation using Pydantic models
+- Mid-phase failures: halt, save partial checkpoint, log errors (FR-045)
 
 ### Error Handling
 
-**Strategy**: Fail-fast with clear error messages (FR-029)
-- Phase failures halt pipeline and report error to user
+**Strategy**: Fail-safe with recovery capability (FR-034, FR-045, FR-046)
+- Phase failures halt pipeline and save partial checkpoint
 - Validation errors show specific field/constraint violated
 - FFmpeg errors capture stderr and present to user
-- No interesting segments → specific error message (FR-007)
+- No interesting segments (< 7/10 threshold) → specific error message (FR-007)
+- Invalid MP4 files: validate headers, skip with warning, process valid ones (FR-046)
 
 ### Logging & Observability
 
-**Pattern**: Dual-channel logging (FR-032, FR-033, FR-034)
+**Pattern**: Dual-channel logging (FR-042, FR-043, FR-044)
 - Console: Progress updates, phase transitions, warnings
 - File: Detailed logs with timestamps, debug info, errors
-- Configurable verbosity: minimal, moderate, detailed, verbose
-- Default: detailed with progress percentages
+- Configurable verbosity: minimal, moderate, detailed (default), verbose
+- Default: detailed with progress percentages and operation descriptions
 
 ### Video Processing Architecture
 
 **Pattern**: Hybrid OpenCV + FFmpeg
 - **OpenCV**: Frame extraction, analysis (motion, scenes, composition)
 - **FFmpeg**: Video encoding/decoding, assembly, effects, audio mixing
-- Frame sampling strategy: Analyze subset of frames (e.g., 1fps) for performance
+- Frame sampling strategy: Analyze 1fps for performance (configurable)
 - Temporary file management: Cleanup intermediate files after phase completion
+
+### Quality Scoring Formula (Updated)
+
+**Weighted Formula**: `quality_score = (0.6 * scene_score) + (0.25 * motion_score) + (0.15 * composition_score)`
+
+**Rationale**:
+- Scene changes (60%): Primary indicator of interesting content and visual variety
+- Motion (25%): Secondary indicator of action and dynamics
+- Composition (15%): Baseline visual quality measure
+
+**Minimum Threshold**: 7/10 (segments below this are excluded)
+
+### Multi-Video Processing
+
+**Pattern**: Unified content pool with chronological ordering (FR-041, FR-014)
+- All input videos processed together
+- Segments merged into single pool for quality-based selection
+- Final ordering: chronological by original timestamp across all videos
+- Video Source includes file creation/modification timestamp for ordering
 
 ## Testing Strategy
 
@@ -216,10 +261,10 @@ output/                      # Created at runtime
 - Utilities: Logger, progress reporter, validator
 
 ### Integration Tests
-- Full pipeline: End-to-end with fixture videos
+- Full pipeline: End-to-end with fixture videos (multiple videos)
 - Checkpoint override: Modify checkpoint, resume pipeline
 - Phase resume: Start from specific phase with existing checkpoints
-- Edge cases: Short videos, low-quality videos, corrupted checkpoints
+- Edge cases: Short videos, low-quality videos, corrupted checkpoints, invalid files
 
 ### Test Fixtures
 - `sample_video_short.mp4`: 30-second video for quick tests
@@ -247,29 +292,35 @@ output/                      # Created at runtime
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| FFmpeg not installed | High - pipeline unusable | Check FFmpeg availability at startup, provide clear installation instructions |
+| FFmpeg not installed | High - pipeline unusable | Check FFmpeg availability at startup (FR-046), provide clear installation instructions |
 | Large file processing (>10GB) | Medium - memory/performance | Implement streaming, document limitations in README |
-| Quality scoring accuracy | Medium - poor highlights | Make algorithm configurable, support manual override via checkpoints |
-| Checkpoint corruption | Low - user frustration | JSON schema validation, provide repair/regenerate tools |
+| Quality scoring accuracy | Medium - poor highlights | Quality formula tuned (60%/25%/15%), threshold set to 7/10, support manual override via checkpoints |
+| Checkpoint corruption | Low - user frustration | JSON schema validation (Pydantic), provide repair/regenerate tools |
+| Invalid MP4 files | Medium - pipeline failure | Validate headers at startup, skip invalid files with warning (FR-046) |
 
 ## Open Questions
 
-*To be resolved in Phase 0 research:*
+*All critical questions resolved in Phase 0 research and specification clarification.*
 
-1. What specific OpenCV algorithms for motion detection? (Frame differencing vs optical flow)
-2. Scene change detection threshold values? (Experimentation needed)
-3. Composition scoring formula weights? (Motion 40%, scene changes 30%, composition 30%?)
-4. FFmpeg command templates for each operation? (Assembly, transitions, overlays, audio mixing)
-5. Progress estimation accuracy? (How to predict remaining time?)
+**Resolved**:
+- ✅ Quality score formula: 60% scene changes + 25% motion + 15% composition
+- ✅ Minimum quality threshold: 7/10
+- ✅ Multi-video ordering: Chronological by timestamp across all videos
+- ✅ Mid-phase failure handling: Halt, save checkpoint, log, preserve work
+- ✅ Invalid file handling: Validate headers, skip with warning
+- ✅ FFmpeg command templates: Documented in research.md
+- ✅ Progress estimation: Callback-based with elapsed/remaining time
+- ✅ Scene change threshold: Chi-Square distance > 0.3
 
 ## Dependencies
 
 ### External Libraries
 - `opencv-python` (cv2): Video frame analysis
-- `ffmpeg-python`: Python wrapper for FFmpeg subprocess calls
-- `jsonschema` or `pydantic`: JSON validation
+- `ffmpeg-python` or subprocess: FFmpeg subprocess calls (decided: subprocess for direct control)
+- `pydantic`: JSON validation and type safety
 - `pytest`: Testing framework
-- `click` or `argparse`: CLI argument parsing
+- `argparse`: CLI argument parsing (Python standard library)
+- `pyyaml`: YAML logging configuration
 
 ### System Requirements
 - Python 3.11+
@@ -277,17 +328,25 @@ output/                      # Created at runtime
 - Sufficient disk space (2x source video size)
 
 ### Optional Dependencies
-- `tqdm`: Enhanced progress bars
-- `colorlog`: Colored console output
-- `pyyaml`: YAML logging configuration
+- `tqdm`: Enhanced progress bars (optional, using custom reporter instead)
+- `colorlog`: Colored console output (optional)
 
 ## Next Steps
 
-1. Execute Phase 0: Research & generate `research.md`
-2. Execute Phase 1: Design & generate `data-model.md`, `contracts/`, `quickstart.md`
-3. Update agent context with technology stack
-4. Proceed to `/speckit.tasks` for task breakdown
+1. ✅ Execute Phase 0: Research & generate `research.md` **COMPLETE**
+2. ✅ Execute Phase 1: Design & generate `data-model.md`, `contracts/`, `quickstart.md` **COMPLETE**
+3. ⏭️ Update agent context with technology stack → **NEXT**
+4. ⏭️ Proceed to `/speckit.tasks` for task breakdown → **AFTER AGENT CONTEXT UPDATE**
 
 ---
 
-**Plan Status**: Ready for Phase 0 research execution
+**Plan Status**: ✅ **COMPLETE** - Ready for task generation (`/speckit.tasks`)
+
+**Phase 0 & 1 Artifacts**:
+- ✅ `research.md` - All technical decisions documented
+- ✅ `data-model.md` - All entities defined with validation rules
+- ✅ `contracts/checkpoint-phase*.json` - 5 JSON schemas generated
+- ✅ `quickstart.md` - Usage scenarios documented
+- ✅ Specification clarifications integrated (quality formula, thresholds, ordering)
+
+**Ready for Implementation Planning**: All design decisions made, contracts defined, ready to generate task breakdown.

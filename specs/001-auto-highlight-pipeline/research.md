@@ -247,13 +247,13 @@ def calculate_composition_score(frame):
 ## 6. Quality Score Combination Formula
 
 ### Decision
-**Weighted average**: Motion (40%), Scene Changes (30%), Composition (30%)
+**Weighted average**: Scene Changes (60%), Motion (25%), Composition (15%)
 
 ### Rationale
-- Motion is primary indicator of "interesting" content (gaming, action)
-- Scene changes indicate transitions and variety
-- Composition ensures visual quality
-- Weights tuned for gaming/vlog content (can be configured)
+- Scene changes are primary indicator of "interesting" content (new visual content, transitions)
+- Motion indicates action and dynamics but secondary to scene variety
+- Composition ensures visual quality baseline
+- Weights prioritize visual variety and content changes over raw motion
 
 ### Implementation Pattern
 ```python
@@ -278,17 +278,17 @@ def calculate_segment_quality_score(segment_frames):
 
     # Weighted combination
     final_score = (
-        avg_motion * 0.4 +
-        avg_scene * 0.3 +
-        avg_composition * 0.3
+        avg_scene * 0.6 +
+        avg_motion * 0.25 +
+        avg_composition * 0.15
     )
 
     return round(final_score, 1)
 ```
 
 ### Minimum Quality Threshold
-- Threshold: 3.0 (segments below this fail as "no interesting content")
-- Configurable via CLI: `--min-quality 3.0`
+- Threshold: 7.0 (segments below this fail as "no interesting content")
+- Configurable via CLI: `--min-quality 7.0`
 
 ---
 
@@ -570,7 +570,7 @@ def classify_segment(segment, motion_score, scene_score, composition_score):
 | Motion Detection | Frame differencing + thresholding | Simple, fast, effective |
 | Scene Detection | Histogram comparison (Chi-Square) | Reliable cut detection |
 | Composition Scoring | Edge density + color diversity | Holistic quality measure |
-| Quality Formula | Weighted: Motion 40%, Scene 30%, Comp 30% | Balanced for gaming/vlogs |
+| Quality Formula | Weighted: Scene 60%, Motion 25%, Comp 15% | Prioritizes visual variety |
 | Validation | Pydantic models | Type-safe, auto-validation |
 | Progress Reporting | Callback-based with time estimation | Flexible, informative |
 | Logging | Python logging + YAML config | Standard, configurable |
@@ -616,9 +616,9 @@ def classify_segment(segment, motion_score, scene_score, composition_score):
 ### Performance Tuning Parameters
 
 - **Frame sample rate**: Default 1fps, configurable via `--sample-rate`
-- **Quality threshold**: Default 3.0, configurable via `--min-quality`
+- **Quality threshold**: Default 7.0, configurable via `--min-quality`
 - **Segment duration**: Fixed 5-15 seconds per FR-002
-- **Score weights**: Motion 0.4, Scene 0.3, Composition 0.3 (hardcoded initially)
+- **Score weights**: Scene 0.6, Motion 0.25, Composition 0.15 (hardcoded initially)
 
 ---
 

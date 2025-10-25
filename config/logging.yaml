@@ -1,0 +1,35 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  simple:
+    format: '%(levelname)s - %(message)s'
+  detailed:
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: simple
+    stream: ext://sys.stdout
+
+  file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: output/logs/pipeline.log
+    maxBytes: 104857600  # 100MB
+    backupCount: 3
+    encoding: utf8
+
+root:
+  level: DEBUG
+  handlers: [console, file]
+
+loggers:
+  autovideo:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: false

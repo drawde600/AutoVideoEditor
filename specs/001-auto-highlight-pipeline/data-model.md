@@ -252,12 +252,12 @@ Segment(
       "manually_edited": false
     }
   ],
-  "min_quality_threshold": 3.0,
+  "min_quality_threshold": 7.0,
   "segments_above_threshold": 87,
   "score_weights": {
-    "motion": 0.4,
-    "scene": 0.3,
-    "composition": 0.3
+    "scene": 0.6,
+    "motion": 0.25,
+    "composition": 0.15
   }
 }
 ```
@@ -429,7 +429,7 @@ Segment(
 | `input_videos` | `List[str]` | Yes | Files exist | - | Paths to one or more input videos |
 | `output_directory` | `str` | Yes | Directory exists | `./output` | Output directory for files |
 | `target_duration` | `float` | Yes | > 0 | See note | Target highlight duration (seconds) |
-| `min_quality_threshold` | `float` | No | 1.0 - 10.0 | 3.0 | Minimum quality score |
+| `min_quality_threshold` | `float` | No | 1.0 - 10.0 | 7.0 | Minimum quality score |
 | `sample_rate_fps` | `float` | No | > 0 | 1.0 | Frame sampling rate |
 | `logging_verbosity` | `str` | No | Valid level | "detailed" | "minimal", "moderate", "detailed", "verbose" |
 | `resume_from_phase` | `int` | No | 1-5 | 1 | Phase to resume from (or start from) |
@@ -449,7 +449,7 @@ PipelineConfig(
     input_videos=["/path/to/drone_video_1.mp4", "/path/to/drone_video_2.mp4"],
     output_directory="/path/to/output",
     target_duration=180.0,
-    min_quality_threshold=3.0,
+    min_quality_threshold=7.0,
     sample_rate_fps=1.0,
     logging_verbosity="detailed",
     resume_from_phase=1,

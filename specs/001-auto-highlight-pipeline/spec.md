@@ -91,7 +91,7 @@ A user wants to run only specific phases of the pipeline (e.g., re-run compositi
 
 ### Edge Cases
 
-- What happens when the video file is corrupted or in an unsupported format?
+- **Corrupted/Invalid Files**: System validates MP4 headers at startup, skips invalid files with warning, processes remaining valid files (see FR-046)
 - How does the system handle very large video files (>10GB) or very long durations (>4 hours)?
 - What happens when insufficient disk space exists for output files?
 - How does the system handle videos with multiple audio tracks or no audio?
@@ -107,6 +107,11 @@ A user wants to run only specific phases of the pipeline (e.g., re-run compositi
 - Q: Which Python video processing library should be used as the primary framework for video manipulation? → A: OpenCV + FFmpeg
 - Q: What level of logging and progress reporting should the system provide during pipeline execution? → A: Default detailed progress with phase completion percentages, current operation descriptions, and warning/error logs saved to files, but allow changing the level at command line
 - Q: How should the system handle videos shorter than the target highlight duration? → A: Use the entire video as the highlight reel and warn the user
+- Q: What formula should combine motion, scene changes, and visual composition metrics into the final quality score (1-10)? → A: Scene change 60%, motion 25%, composition 15%
+- Q: How should the system handle mid-phase failures (e.g., FFmpeg crash during assembly, out of memory during analysis)? → A: Halt pipeline, save checkpoint, log error details, preserve partial work
+- Q: When processing multiple input videos, how should segments be ordered in the final highlight reel? → A: Merge chronologically by original timestamp across all videos
+- Q: What minimum quality score threshold (1-10 scale) should determine "interesting" segments eligible for inclusion in the highlight reel? → A: Minimum quality score of 7/10
+- Q: How should the system handle corrupted or invalid MP4 files at pipeline startup? → A: Validate headers, skip invalid files with warning, process valid ones
 
 ## Requirements *(mandatory)*
 
@@ -119,9 +124,9 @@ A user wants to run only specific phases of the pipeline (e.g., re-run compositi
 - **FR-004**: System MUST support loading existing Phase 1 checkpoint to skip re-analysis
 
 **Phase 2: Ranking & Classification**
-- **FR-005**: System MUST assign quality scores (1-10 scale) to each extracted segment based on motion analysis, scene changes, and visual composition (audio excluded from scoring)
+- **FR-005**: System MUST assign quality scores (1-10 scale) to each extracted segment using weighted formula: 60% scene changes + 25% motion analysis + 15% visual composition (audio excluded from scoring)
 - **FR-006**: System MUST classify each segment with descriptive tags or categories
-- **FR-007**: System MUST fail with a clear error message if no segments meet minimum quality thresholds for interesting content
+- **FR-007**: System MUST fail with a clear error message if no segments meet minimum quality threshold of 7/10 for interesting content
 - **FR-008**: System MUST save ranking and classification results to a JSON checkpoint file
 - **FR-009**: System MUST allow manual modification of scores and classifications in the checkpoint file
 - **FR-010**: System MUST support loading existing Phase 2 checkpoint to skip re-ranking
@@ -129,8 +134,8 @@ A user wants to run only specific phases of the pipeline (e.g., re-run compositi
 **Phase 3: Assembly**
 - **FR-011**: System MUST select segments to meet a target duration specified by the user
 - **FR-012**: System MUST use the entire video as the highlight reel when source video is shorter than target duration, with a warning message to the user
-- **FR-013**: System MUST optimize segment selection for both quality scores and variety (avoid selecting all clips from one section)
-- **FR-014**: System MUST assemble selected segments in chronological order from the original video
+- **FR-013**: System MUST optimize segment selection for both quality scores (minimum 7/10) and variety (avoid selecting all clips from one section)
+- **FR-014**: System MUST assemble selected segments in chronological order based on original timestamps; when processing multiple videos, segments are merged chronologically across all source videos by timestamp
 - **FR-015**: System MUST save assembly decisions (selected segments, ordering) to a JSON checkpoint file
 - **FR-016**: System MUST support loading existing Phase 3 checkpoint to use pre-determined segment selection
 
@@ -158,6 +163,7 @@ A user wants to run only specific phases of the pipeline (e.g., re-run compositi
 **General Requirements**
 - **FR-029**: System MUST process one or more MP4 video files as input
 - **FR-030**: System MUST produce MP4 video files as output
+- **FR-046**: System MUST validate MP4 file headers at pipeline startup, skip corrupted or invalid files with warning message logged, and proceed with processing valid files only
 - **FR-031**: System MUST preserve original video files (non-destructive editing)
 - **FR-032**: System MUST create JSON checkpoint files after each phase for inspection and manual override
 - **FR-033**: System MUST validate JSON checkpoint files before using them to detect corruption
@@ -168,15 +174,16 @@ A user wants to run only specific phases of the pipeline (e.g., re-run compositi
 - **FR-042**: System MUST display detailed progress reporting by default, including phase completion percentages and current operation descriptions
 - **FR-043**: System MUST save warning and error logs to files for debugging and troubleshooting
 - **FR-044**: System MUST accept command-line arguments to adjust logging verbosity level (minimal, moderate, detailed, verbose)
+- **FR-045**: System MUST halt pipeline execution on mid-phase failures, save partial checkpoint with completed work, log error details to file, and preserve all intermediate files for recovery
 
 ### Key Entities
 
-- **Video Source**: One or more input MP4 files to be processed, each including file path, duration, resolution, frame rate, audio properties, and optional SRT file path for GPS data
+- **Video Source**: One or more input MP4 files to be processed, each including file path, duration, resolution, frame rate, audio properties, file creation/modification timestamp for chronological ordering, and optional SRT file path for GPS data
 - **Segment**: An extracted clip from a source video, including source video identifier, start timestamp, end timestamp, duration, quality score, classifications/tags, inclusion status, and optional GPS coordinates/elevation data
 - **GPS Data**: Optional location information for a segment, including coordinate path (latitude/longitude pairs), elevation values, and reverse-geocoded location name (city/country)
 - **Checkpoint**: A JSON file persisting pipeline state, including phase number, timestamp, input parameters, GPS data, and phase-specific output data
 - **Highlight Reel**: The final assembled output video, including selected segments, applied effects, composition settings, audio mix configuration, and GPS overlays where available
-- **Pipeline Configuration**: User settings controlling pipeline behavior, including target duration, quality thresholds, transition preferences, audio mixing levels, GPS overlay settings, and logging verbosity
+- **Pipeline Configuration**: User settings controlling pipeline behavior, including target duration, minimum quality threshold (default 7/10), transition preferences, audio mixing levels, GPS overlay settings, and logging verbosity
 - **Progress Report**: Real-time execution status including current phase, completion percentage, current operation, and elapsed time
 - **Log File**: Persistent record of warnings, errors, and diagnostic information saved to disk for troubleshooting
 
