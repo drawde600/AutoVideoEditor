@@ -1,0 +1,142 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://autovideo.example.com/schemas/checkpoint-phase4.json",
+  "title": "Phase 4 Checkpoint: Composition",
+  "description": "Checkpoint schema for Phase 4 (Composition) containing transitions, overlays, and subtitle settings",
+  "type": "object",
+  "required": [
+    "phase",
+    "timestamp",
+    "input_video_path",
+    "pipeline_version",
+    "phase_duration_seconds",
+    "transition_type"
+  ],
+  "properties": {
+    "phase": {
+      "type": "integer",
+      "const": 4,
+      "description": "Phase number (always 4 for composition)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when checkpoint was created"
+    },
+    "input_video_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Absolute path to source video file"
+    },
+    "pipeline_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of pipeline"
+    },
+    "phase_duration_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Time taken to complete this phase in seconds"
+    },
+    "transition_type": {
+      "type": "string",
+      "enum": ["cut", "fade", "dissolve"],
+      "description": "Transition effect between clips (FR-016)"
+    },
+    "transition_duration": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 2.0,
+      "description": "Duration of transition in seconds (0 for cut)"
+    },
+    "text_overlays": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "segment_id",
+          "text",
+          "position",
+          "font_size",
+          "start_offset",
+          "duration"
+        ],
+        "properties": {
+          "segment_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Segment to apply overlay to"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Text content to display"
+          },
+          "position": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Position [x, y] in pixels"
+          },
+          "font_size": {
+            "type": "integer",
+            "minimum": 8,
+            "maximum": 144,
+            "description": "Font size in points"
+          },
+          "start_offset": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Delay after segment start in seconds"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0.1,
+            "description": "Overlay duration in seconds"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "description": "Text color in hex format (e.g., #FFFFFF)"
+          },
+          "font_family": {
+            "type": "string",
+            "description": "Font family name (e.g., 'Arial', 'Helvetica')"
+          }
+        }
+      },
+      "description": "Text overlay configurations (FR-017)"
+    },
+    "subtitle_file": {
+      "type": ["string", "null"],
+      "description": "Path to subtitle file (SRT format) or null if no subtitles"
+    },
+    "subtitle_style": {
+      "type": ["object", "null"],
+      "properties": {
+        "font_size": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 72
+        },
+        "font_color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "background_color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "position": {
+          "type": "string",
+          "enum": ["bottom", "top", "middle"]
+        }
+      },
+      "description": "Subtitle styling options (FR-018)"
+    }
+  }
+}

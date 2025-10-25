@@ -1,0 +1,169 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://autovideo.example.com/schemas/checkpoint-phase2.json",
+  "title": "Phase 2 Checkpoint: Ranking & Classification",
+  "description": "Checkpoint schema for Phase 2 (Ranking) containing segments with quality scores and classifications",
+  "type": "object",
+  "required": [
+    "phase",
+    "timestamp",
+    "input_video_path",
+    "pipeline_version",
+    "phase_duration_seconds",
+    "segments",
+    "min_quality_threshold",
+    "segments_above_threshold",
+    "score_weights"
+  ],
+  "properties": {
+    "phase": {
+      "type": "integer",
+      "const": 2,
+      "description": "Phase number (always 2 for ranking)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when checkpoint was created"
+    },
+    "input_video_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Absolute path to source video file"
+    },
+    "pipeline_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of pipeline"
+    },
+    "phase_duration_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Time taken to complete this phase in seconds"
+    },
+    "segments": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Array of segments with quality scores and classifications",
+      "items": {
+        "type": "object",
+        "required": [
+          "segment_id",
+          "start_time",
+          "end_time",
+          "duration",
+          "quality_score",
+          "motion_score",
+          "scene_score",
+          "composition_score",
+          "classifications",
+          "included",
+          "manually_edited"
+        ],
+        "properties": {
+          "segment_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for segment"
+          },
+          "start_time": {
+            "type": "number",
+            "minimum": 0
+          },
+          "end_time": {
+            "type": "number",
+            "minimum": 0
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 5.0,
+            "maximum": 15.0
+          },
+          "quality_score": {
+            "type": "number",
+            "minimum": 1.0,
+            "maximum": 10.0,
+            "description": "Overall quality score (1-10)"
+          },
+          "motion_score": {
+            "type": "number",
+            "minimum": 1.0,
+            "maximum": 10.0,
+            "description": "Motion analysis score"
+          },
+          "scene_score": {
+            "type": "number",
+            "minimum": 1.0,
+            "maximum": 10.0,
+            "description": "Scene change score"
+          },
+          "composition_score": {
+            "type": "number",
+            "minimum": 1.0,
+            "maximum": 10.0,
+            "description": "Visual composition score"
+          },
+          "classifications": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "high-action",
+                "static",
+                "dynamic-scene",
+                "visually-rich",
+                "highlight-candidate",
+                "neutral"
+              ]
+            },
+            "description": "Segment classification tags"
+          },
+          "included": {
+            "type": "boolean",
+            "description": "Whether segment is included in final reel"
+          },
+          "manually_edited": {
+            "type": "boolean",
+            "description": "Flag indicating manual user edit of this segment"
+          }
+        }
+      }
+    },
+    "min_quality_threshold": {
+      "type": "number",
+      "minimum": 1.0,
+      "maximum": 10.0,
+      "description": "Minimum quality score to proceed (FR-007)"
+    },
+    "segments_above_threshold": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Count of segments meeting quality threshold (must be > 0 per FR-007)"
+    },
+    "score_weights": {
+      "type": "object",
+      "required": ["motion", "scene", "composition"],
+      "properties": {
+        "motion": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Weight for motion score (default 0.4)"
+        },
+        "scene": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Weight for scene change score (default 0.3)"
+        },
+        "composition": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Weight for composition score (default 0.3)"
+        }
+      },
+      "description": "Weights used to calculate quality score (must sum to 1.0)"
+    }
+  }
+}
